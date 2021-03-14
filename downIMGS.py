@@ -24,6 +24,9 @@ def get_name(url: str):
     # AQUI VERIFICAMOS SE O NOME QUE PEGAMOS TERMINA COM UMAS DESSAS EXTENSÕES
     if name.endswith(TAGS):
         return name
+
+    if 'manifest' in url:
+        return 'manifest'
     
     # CASO NÃO TERMINE COM NENHUMA DESSAS EXTENSÕES, ELE TENTA PEGAR E DIVIDIR UM TRECHO 
     # PARECIDO COM ISSO: teste.com/imagem.png?exemplo/outra_coisa
@@ -40,9 +43,9 @@ def get_name(url: str):
     return name
 
 
-async def baixar(url: str):
+async def baixar(url: str, namedir: str):
     """ Realiza o download de algum arquivo """
-    
+
     name = get_name(url)
 
     if name:
@@ -52,22 +55,24 @@ async def baixar(url: str):
                 async with aiohttp.ClientSession(headers=headers, timeout=timeout) as session:
                     async with session.get(url) as resp:
                         if resp.status == 200:
-                            f = await aiofiles.open(f'imagens/{name}', mode='wb')
+                            f = await aiofiles.open(f'{namedir}/{name}', mode='wb')
                             await f.write(await resp.read())
                             await f.close()                                
             except:
-                print('[-] Erro ao baixar arquivo; url:', url)
+                print('[ERRO 004]: Erro ao baixar arquivo: \n-->', url + '\n')
                 #print('[-] Nome usado para salvar:', name)
                 pass
 
     else:
-        print('[-] Nome para salvar vazio:', str(len(name)))
+        print('[ERRO 000]: Filename vazio:', str(len(name)))
+        print('-->', url + '\n')
+        pass
 
 
-def createMain(lista):
+def createMain(lista, namedir):
     complemento = ""
     for x in lista:
-        complemento += f"baixar('{x}'), "    
+        complemento += f"baixar('{x}', '{namedir}'), "    
     complemento = complemento[:-2]
         
     funcao = f'''
@@ -77,13 +82,13 @@ async def main2():
     return funcao 
 
 
-def downIMGS(lista):
+def downIMGS(lista, namedir):
     s = time.perf_counter()
-    main = createMain(lista)
+    main = createMain(lista, namedir)
     exec(main, globals())
     asyncio.run(main2())
     elapsed = time.perf_counter() - s
-    print(f"executed in {elapsed:0.2f} seconds.")
+    #print(f"executed in {elapsed:0.2f} seconds.")
 
 
 if __name__ == "__main__":
@@ -92,4 +97,4 @@ if __name__ == "__main__":
     if lista[0] == 'urls':
         print('Passe suas urls para a "url_list"')
         quit()
-    asyncio.run(downIMGS(lista))
+    asyncio.run(downIMGS(lista, 'pasta/para/salvar'))

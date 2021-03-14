@@ -2,7 +2,8 @@ from downIMGS import downIMGS, get_name, baixar
 from lxml import html
 import asyncio
 import aiohttp
-import aiofiles 
+import aiofiles
+import re 
 import os
 
 
@@ -12,9 +13,10 @@ headers = {
 
 
 class HTML():
-    def __init__(self, html_string, url_to_clone):
+    def __init__(self, html_string, url_to_clone, namedir):
         self.tree = html.fromstring(html_string)
         self.url_to_clone = url_to_clone
+        self.namedir = namedir
         
 
     def clean_html(self):
@@ -47,10 +49,18 @@ class HTML():
         for x in range(0, len(css_and_json)):
             if css_and_json[x].startswith('/'):
                 split = self.url_to_clone.split('/')[:3]
+                # ESSE TIPO DE ARQUIVO EU BAIXO ANTES POR COMPLICAÇÕES POSTERIORES AO ASSOCIAR OS ARQUIVOS OFLINE
+                asyncio.run(baixar(split[0] + '//' + split[2] + css_and_json[x], self.namedir))
+
+
+        for x in range(0, len(imgs)):
+            if imgs[x].startswith('/'):
+                split = self.url_to_clone.split('/')[:3]
 
                 # ESSE TIPO DE ARQUIVO EU BAIXO ANTES POR COMPLICAÇÕES POSTERIORES AO ASSOCIAR OS ARQUIVOS OFLINE
-                asyncio.run(baixar(split[0] + '//' + split[2] + css_and_json[x]))
-    
+                asyncio.run(baixar(split[0] + '//' + split[2] + imgs[x], self.namedir))
+
+
         imgs = imgs + imgs2 + scripts + css_and_json
         return imgs
 
@@ -62,7 +72,24 @@ class HTML():
         return imgs, self.tree
 
 
+def dir(URL):
+    if URL.startswith('http://www.') or URL.startswith('https://www.') or URL.startswith('www'):
+        namedir = URL.split('.')[1]
+    else:
+        namedir = URL.split('/')[2]
+
+    try:
+        os.mkdir(namedir)
+    except FileExistsError:
+        pass
+
+    return namedir
+
+
 count = 0
+rex = r'\((http[^)]+)\)'
+
+
 async def clone(URL):
     """ Salva a html de um site num arquivo index.html """ 
 
@@ -71,18 +98,26 @@ async def clone(URL):
     timeout = aiohttp.ClientTimeout(total=5)
     async with aiohttp.ClientSession(timeout=timeout, headers=headers) as session:
         async with session.get(URL) as page:
+
             count += 1
             if page.status == 200:
-                file = await aiofiles.open(f'index{str(count)}.html', 'w', encoding='UTF-8')
+                namedir = dir(URL)
+                file = await aiofiles.open(f'{namedir}.html', 'w', encoding='UTF-8')
                 content = await page.text() 
 
-                urls, content = HTML(content, URL).run()        
-                downIMGS(urls)
+                urls, content = HTML(content, URL, namedir).run()
+                urls_imgs3 = re.findall(rex, content) # LISTA URL DE IMAGENS QUANDO ESSAS SÃO PASSADAS NO ATRIBUTO STYLE; EX: style="background-image: url(exemplo.png)"
+                downIMGS(urls, namedir)
+                downIMGS(urls_imgs3, namedir)
                 
+                # ALTERO O CAMINHO NA HTML PARA ACESSAR OS ARQUIVOS BAIXADOS 
                 for x in urls:
-                    content = content.replace('src="' + x + '"', 'src="' + os.getcwd() + '\\imagens\\' + get_name(x) + '"')
-                    content = content.replace('href="' + x + '"', 'href="' + os.getcwd() + '\\imagens\\' + get_name(x) + '"')
-                    content = content.replace('src=' + x, 'src="' + os.getcwd() + '\\imagens\\' + get_name(x) + '"')
+                    content = content.replace('src="' + x + '"', 'src="' + f'./{namedir}/' + get_name(x) + '"')
+                    content = content.replace('href="' + x + '"', 'href="' + f'./{namedir}/' + get_name(x) + '"')
+                    content = content.replace('src=' + x, 'src="' + f'./{namedir}/' + get_name(x) + '"')
+
+                for x in urls_imgs3:
+                    content = content.replace(x, f'./{namedir}/' + get_name(x))
 
                 await file.write(content)
             else:
@@ -94,9 +129,12 @@ async def main():
 
 
 # EXEMPLO
-URL1 = 'https://realpython.com/'
-URL2 = 'https://www.tecmundo.com.br/cultura-geek/146716-anime-8-melhores-episodios-piloto-series.htm'
-coroutines_list = [clone(URL1), clone(URL2)]
+SITES = [
+'https://realpython.com/',
+'https://blog.rocketseat.com.br/tag/nodejs/'
+]
+
+coroutines_list = [*[clone(x) for x in SITES]]
 
 
 if __name__ == "__main__":
