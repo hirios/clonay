@@ -47,18 +47,23 @@ class HTML():
         # SITE: http://www.google.com/
 
         for x in range(0, len(css_and_json)):
-            if css_and_json[x].startswith('/'):
+            if css_and_json[x].startswith('/') or css_and_json[x].startswith('./'):
                 split = self.url_to_clone.split('/')[:3]
-                # ESSE TIPO DE ARQUIVO EU BAIXO ANTES POR COMPLICAÇÕES POSTERIORES AO ASSOCIAR OS ARQUIVOS OFLINE
-                asyncio.run(baixar(split[0] + '//' + split[2] + css_and_json[x], self.namedir))
 
+                if not css_and_json[x].startswith('./'):
+                    asyncio.run(baixar(split[0] + '//' + split[2] + css_and_json[x], self.namedir))
+                else:
+                    asyncio.run(baixar(split[0] + '//' + split[2] + css_and_json[x][1:], self.namedir))
+                    
 
         for x in range(0, len(imgs)):
-            if imgs[x].startswith('/'):
+            if imgs[x].startswith('/') or imgs[x].startswith('./'):
                 split = self.url_to_clone.split('/')[:3]
 
-                # ESSE TIPO DE ARQUIVO EU BAIXO ANTES POR COMPLICAÇÕES POSTERIORES AO ASSOCIAR OS ARQUIVOS OFLINE
-                asyncio.run(baixar(split[0] + '//' + split[2] + imgs[x], self.namedir))
+                if not imgs[x].startswith('./'):
+                    asyncio.run(baixar(split[0] + '//' + split[2] + imgs[x], self.namedir))
+                else:
+                    asyncio.run(baixar(split[0] + '//' + split[2] + imgs[x][1:], self.namedir))
 
 
         imgs = imgs + imgs2 + scripts + css_and_json
@@ -129,10 +134,7 @@ async def main():
 
 
 # EXEMPLO
-SITES = [
-'https://realpython.com/',
-'https://blog.rocketseat.com.br/tag/nodejs/'
-]
+SITES = ['https://aluno.uninove.br/index.php']
 
 coroutines_list = [*[clone(x) for x in SITES]]
 
