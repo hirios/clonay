@@ -83,6 +83,7 @@ def dir(URL):
     else:
         namedir = URL.split('/')[2]
 
+    namedir = namedir.split('.')[1]
     try:
         os.mkdir(namedir)
     except FileExistsError:
@@ -114,15 +115,16 @@ async def clone(URL):
                 urls_imgs3 = re.findall(rex, content) # LISTA URL DE IMAGENS QUANDO ESSAS SÃO PASSADAS NO ATRIBUTO STYLE; EX: style="background-image: url(exemplo.png)"
                 downIMGS(urls, namedir)
                 downIMGS(urls_imgs3, namedir)
+                namedir = os.getcwd() + '\\' + namedir 
                 
                 # ALTERO O CAMINHO NA HTML PARA ACESSAR OS ARQUIVOS BAIXADOS 
                 for x in urls:
-                    content = content.replace('src="' + x + '"', 'src="' + f'./{namedir}/' + get_name(x) + '"')
-                    content = content.replace('href="' + x + '"', 'href="' + f'./{namedir}/' + get_name(x) + '"')
-                    content = content.replace('src=' + x, 'src="' + f'./{namedir}/' + get_name(x) + '"')
+                    content = content.replace('src="' + x + '"', 'src="' + f'{namedir}\\' + get_name(x) + '"')
+                    content = content.replace('href="' + x + '"', 'href="' + f'{namedir}\\' + get_name(x) + '"')
+                    content = content.replace('src=' + x, 'src="' + f'{namedir}\\' + get_name(x) + '"')
 
                 for x in urls_imgs3:
-                    content = content.replace(x, f'./{namedir}/' + get_name(x))
+                    content = content.replace(x, f'{namedir}\\' + get_name(x))
 
                 await file.write(content)
             else:
@@ -134,7 +136,7 @@ async def main():
 
 
 # EXEMPLO
-SITES = ['https://aluno.uninove.br/index.php']
+SITES = ['https://www12.senado.leg.br/noticias/especiais/arquivo-s/primeira-lei-da-previdencia-de-1923-permitia-aposentadoria-aos-50-anos']
 
 coroutines_list = [*[clone(x) for x in SITES]]
 
