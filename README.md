@@ -18,3 +18,6 @@ import asyncio
 asyncio.run(downIMGS(['page1', 'page2']))
 ```
 
+
+Obs: erros no download de alguns arquivos são esperados, ainda assim páginas funcionaram
+
