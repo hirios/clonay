@@ -13,9 +13,9 @@ $ python clone.py
 
 ```
 from downIMGS import downIMGS
-import asyncio 
 
-asyncio.run(downIMGS(['page1', 'page2'], 'folder_to_save'))
+
+downIMGS(['page1', 'page2'], 'folder_to_save')
 ```
 
 
